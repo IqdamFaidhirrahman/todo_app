@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "934764963826",
+    "project_id": "projek-multiplatform",
+    "storage_bucket": "projek-multiplatform.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:934764963826:android:72fe8b95695c856b6c2d6b",
+        "android_client_info": {
+          "package_name": "com.example.projek_multiplatform"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBvTsHygtedcEQ7VfLaf7QNM2tIkNv9rZM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
