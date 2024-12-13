@@ -8,7 +8,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final todoProvider = Provider.of<TodoProvider>(context);
+    final todoProvider = Provider.of<TodoProvider>(context, listen: false);
 
     return Scaffold(
       appBar: AppBar(
@@ -23,57 +23,68 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: FutureBuilder(
-        future: todoProvider.fetchTodos(),
+        future: todoProvider.fetchTodos(), // Memuat data dari Firebase
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
           if (todoProvider.todos.isEmpty) {
-            return const Center(child: Text("No tasks available"));
+            return const Center(
+              child: Text("No tasks available"),
+            );
           }
-          return ListView.builder(
-            itemCount: todoProvider.todos.length,
-            itemBuilder: (context, index) {
-              final todo = todoProvider.todos[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                child: ListTile(
-                  title: Text(
-                    todo.title,
-                    style: TextStyle(
-                      decoration:
-                          todo.completed ? TextDecoration.lineThrough : null,
+          return Consumer<TodoProvider>(
+            builder: (context, provider, _) {
+              return ListView.builder(
+                itemCount: provider.todos.length,
+                itemBuilder: (context, index) {
+                  final todo = provider.todos[index];
+                  return Card(
+                    margin:
+                        const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    child: ListTile(
+                      title: Text(
+                        todo.title,
+                        style: TextStyle(
+                          decoration: todo.completed
+                              ? TextDecoration.lineThrough
+                              : null,
+                        ),
+                      ),
+                      trailing: Wrap(
+                        spacing: 12,
+                        children: [
+                          // Checkbox untuk menandai selesai
+                          Checkbox(
+                            value: todo.completed,
+                            onChanged: (value) {
+                              provider.toggleComplete(todo.id, todo.completed);
+                            },
+                          ),
+                          // Tombol Edit
+                          IconButton(
+                            icon: const Icon(Icons.edit),
+                            onPressed: () {
+                              _showTodoDialog(
+                                context,
+                                provider,
+                                todoId: todo.id,
+                                currentTitle: todo.title,
+                              );
+                            },
+                          ),
+                          // Tombol Hapus
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              provider.deleteTodo(todo.id);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  trailing: Wrap(
-                    spacing: 12,
-                    children: [
-                      Checkbox(
-                        value: todo.completed,
-                        onChanged: (value) {
-                          todoProvider.toggleComplete(todo.id, todo.completed);
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          _showTodoDialog(
-                            context,
-                            todoProvider,
-                            todoId: todo.id,
-                            currentTitle: todo.title,
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () {
-                          todoProvider.deleteTodo(todo.id);
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                  );
+                },
               );
             },
           );
@@ -108,7 +119,7 @@ class HomeScreen extends StatelessWidget {
             },
             child: const Text("Cancel"),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               final title = titleController.text.trim();
               if (title.isEmpty) {
