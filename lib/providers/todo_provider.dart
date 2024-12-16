@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import '../models/todo_model.dart';
 import '../services/todo_service.dart';
@@ -5,43 +6,63 @@ import '../services/todo_service.dart';
 class TodoProvider extends ChangeNotifier {
   final TodoService _todoService = TodoService();
   List<Todo> _todos = [];
+  bool isLoading = false;
 
   List<Todo> get todos => _todos;
-
+  
   Future<void> fetchTodos() async {
-  try {
-    print("Fetching todos from Firebase...");
-    _todos = await _todoService.fetchTodos();
-    if (_todos.isEmpty) {
-      print("No todos found in Firebase");
+    isLoading = true;
+    notifyListeners();
+    try {
+      final uid = FirebaseAuth.instance.currentUser?.uid;
+      if (uid == null) {
+        throw Exception("User is not logged in.");
+      }
+      _todos = await _todoService.fetchTodosByUser(uid);
+    } catch (e) {
+      print("Error fetching todos: $e");
+      _todos = [];
+    } finally {
+      isLoading = false;
+      notifyListeners();
     }
-    notifyListeners();
-  } catch (e) {
-    print("Error fetching todos: $e");
-    _todos = []; // Hindari null
-    notifyListeners();
   }
-}
-
 
   Future<void> addTodo(String title) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      throw Exception("User is not logged in.");
+    }
     final newTodo = Todo(id: '', title: title, completed: false);
-    await _todoService.addTodo(newTodo);
+    await _todoService.addTodoForUser(uid, newTodo);
     await fetchTodos();
+    notifyListeners();
   }
 
   Future<void> toggleComplete(String id, bool currentStatus) async {
-    await _todoService.toggleComplete(id, currentStatus);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      throw Exception("User is not logged in.");
+    }
+    await _todoService.toggleCompleteForUser(uid, id, currentStatus);
     await fetchTodos();
   }
 
   Future<void> deleteTodo(String id) async {
-    await _todoService.deleteTodo(id);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      throw Exception("User is not logged in.");
+    }
+    await _todoService.deleteTodoForUser(uid, id);
     await fetchTodos();
   }
 
   Future<void> updateTodo(String id, String newTitle) async {
-    await _todoService.updateTodo(id, newTitle);
-    await fetchTodos();
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      throw Exception("User is not logged in.");
+    }
+    await _todoService.updateTodoForUser(uid, id, newTitle);
+    await fetchTodos(); // Refresh data
   }
 }

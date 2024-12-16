@@ -1,18 +1,69 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:projek_multiplatform/screens/home_screen.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import 'register_screen.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final emailController = TextEditingController();
-    final passwordController = TextEditingController();
-    final formKey = GlobalKey<FormState>();
+  _LoginScreenState createState() => _LoginScreenState();
+}
 
+class _LoginScreenState extends State<LoginScreen> {
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  bool isLoading = false;
+
+  @override
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+
+  void login() async {
+    if (!formKey.currentState!.validate()) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await Provider.of<AuthService>(context, listen: false)
+          .login(emailController.text.trim(), passwordController.text.trim());
+      Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+    } catch (e) {
+      _showErrorDialog(e.toString()); // Tampilkan error dari AuthService
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Error"),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text("Login")),
       body: Padding(
@@ -27,10 +78,10 @@ class LoginScreen extends StatelessWidget {
                 decoration: const InputDecoration(labelText: 'Email'),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return "Email cannot be empty";
+                    return "Email tidak boleh kosong";
                   }
                   if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                    return "Enter a valid email";
+                    return "Masukkan email yang valid";
                   }
                   return null;
                 },
@@ -42,32 +93,18 @@ class LoginScreen extends StatelessWidget {
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return "Password cannot be empty";
+                    return "Password tidak boleh kosong";
                   }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  if (formKey.currentState!.validate()) {
-                    try {
-                      await Provider.of<AuthService>(context, listen: false)
-                          .login(emailController.text, passwordController.text);
-                    } catch (e) {
-                      if (e is FirebaseAuthException &&
-                          e.code == 'user-not-found') {
-                        _showUserNotFoundDialog(context);
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(e.toString())),
-                        );
-                      }
-                    }
-                  }
-                },
-                child: const Text("Login"),
-              ),
+              isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ElevatedButton(
+                      onPressed: login,
+                      child: const Text("Login"),
+                    ),
               TextButton(
                 onPressed: () {
                   Navigator.push(
@@ -77,42 +114,11 @@ class LoginScreen extends StatelessWidget {
                     ),
                   );
                 },
-                child: const Text("Don't have an account? Register here"),
+                child: const Text("Belum punya akun? Daftar di sini"),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  void _showUserNotFoundDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Email Not Found"),
-        content: const Text(
-            "The email address is not registered. Would you like to create an account?"),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const RegisterScreen(),
-                ),
-              );
-            },
-            child: const Text("Register"),
-          ),
-        ],
       ),
     );
   }

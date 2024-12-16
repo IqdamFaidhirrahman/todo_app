@@ -15,21 +15,20 @@ class AuthService extends ChangeNotifier {
 
   Future<void> login(String email, String password) async {
     try {
-      final userCredential = await _auth.signInWithEmailAndPassword(email: email, password: password);
-      _user = userCredential.user;
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
       notifyListeners();
-    } catch (e) {
-      rethrow;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthError(e);
     }
   }
 
   Future<void> register(String email, String password) async {
     try {
-      final userCredential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      _user = userCredential.user;
+      await _auth.createUserWithEmailAndPassword(
+          email: email, password: password);
       notifyListeners();
-    } catch (e) {
-      rethrow;
+    } on FirebaseAuthException catch (e) {
+      throw _handleAuthError(e);
     }
   }
 
@@ -37,5 +36,22 @@ class AuthService extends ChangeNotifier {
     await _auth.signOut();
     _user = null;
     notifyListeners();
+  }
+
+  String _handleAuthError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return "Email tidak ditemukan. Silakan daftar terlebih dahulu.";
+      case 'wrong-password':
+        return "Password salah. Silakan coba lagi.";
+      case 'email-already-in-use':
+        return "Email sudah digunakan. Gunakan email lain.";
+      case 'invalid-email':
+        return "Email tidak valid. Masukkan email yang benar.";
+      case 'weak-password':
+        return "Password terlalu lemah. Gunakan kombinasi lebih kuat.";
+      default:
+        return e.message ?? "Terjadi kesalahan. Silakan coba lagi.";
+    }
   }
 }
