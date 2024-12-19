@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -25,9 +26,22 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'To-Do List App',
         theme: ThemeData(primarySwatch: Colors.blue),
-        home: Consumer<AuthService>(
-          builder: (context, authService, _) {
-            return authService.isLoggedIn ? const HomeScreen() : const LoginScreen();
+        debugShowCheckedModeBanner: false,
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              // Tampilkan loading saat menunggu status login
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+            if (snapshot.hasData) {
+              // Jika pengguna sudah login, arahkan ke HomeScreen
+              return const HomeScreen();
+            }
+            // Jika pengguna belum login, arahkan ke LoginScreen
+            return const LoginScreen();
           },
         ),
       ),
